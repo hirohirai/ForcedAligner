@@ -1,0 +1,95 @@
+# @package _global_
+
+defaults:
+  - model: dnn_mgc
+  - _self_
+
+hydra:
+  job_logging:
+    root:
+      level: WARNING
+
+N_jobs: 1
+debug: False
+seed: 773
+
+
+input:
+  world_path: /home/hirai/work_local/Speech/DBS_/atr/nr_world
+  world_f0_path: /home/hirai/work_local/Speech/DBS_/atr/world
+  tgrid_path: /home/hirai/work_local/Speech/DBS_/atr/TextGrid
+  wav_path: /home/hirai/work_local/Speech/DBS_/atr/nr_wav
+  spk_ptn: (...._2)/./
+  subdir:
+  mgc_order: 45
+  cap_order: 2
+  world_rate: 0.005
+  fftn: 256
+  mfccn: 13
+
+
+data:
+  base_dir: data
+  stats_dir: stats
+  sampling_rate: 16000
+  stats_file: [world.npz, stft.npz, mfcc.npz]
+  mgc_order: 25
+  input_dir: in_feats
+  #input_dir: in_test
+  target_dir: targets
+  #target_dir: tgt_test
+  train_dir: data_t
+  # use_stats: [mgc, spc, mfcc,]
+  # use_stats: [mgc, spc]
+  use_stats: [mgc,]
+  dur_dic: dur_dic.pkl
+
+  train:
+    id_list: data/dataset_input_M_train_wo101.csv
+    #id_list: data_t/data_test_train.csv
+
+  eval:
+    id_list: data/dataset_input_M_eval_wo101.csv
+    #id_list: data_t/data_test_eval.csv
+
+# 1) none 2) tqdm
+tqdm: tqdm
+
+cudnn:
+  benchmark: true
+  deterministic: false
+
+train:
+  out_dir: exp
+  log_dir: tensorboard/exp
+
+  max_train_steps: -1
+  nepochs: 200
+  checkpoint_epoch_interval: 10
+
+  batch_size: 1
+  num_workers: 1
+
+  save_fid_T: [0,1,2,3]
+  save_fid_E: [0,1,2,3]
+
+  optim:
+    optimizer:
+      name: SGD
+      params:
+        lr: 0.1
+        #momentum: 0.9
+        #weight_decay: 0.005
+
+    lr_scheduler:
+      name:
+      # name: StepLR
+      params:
+        step_size: 10
+        gamma: 0.5
+
+  pretrained:
+    checkpoint:
+
+
+
