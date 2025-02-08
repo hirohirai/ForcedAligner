@@ -60,7 +60,7 @@ CSJ_PTK = ('k', 't', 'c', 'p',
 CSJ_BDG = ('g', 'd', 'b',
            'gj', 'dj', 'bj',)
 
-CL_ph = ['k', 'g', 't', 'c', 'd', 'b', 'p', 'ky', 'kj', 'kw', 'gy', 'gj', 'gw', 'cj', 'cy', 'tj', 'ty', 'dj', 'dy', 'bj', 'by', 'v', 'pj', 'py', 'z']
+CL_ph = ['k', 'g', 't', 'c', 'd', 'b', 'p', 'ky', 'kj', 'kw', 'gy', 'gj', 'gw', 'cj', 'cy', 'tj', 'ty', 'dj', 'dy', 'bj', 'by', 'v', 'pj', 'py', 'z', 'zy']
 J_ph = ['ky', 'sy', 'cy', 'ty', 'hy', 'Fy', 'py', 'gy', 'zy', 'dy', 'ny', 'by', 'my', 'ry']
 
 # len(roms) 42

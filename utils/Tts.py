@@ -93,6 +93,7 @@ class TtsWord:
     def __init__(self):
         self.moras = []
         self.sword = []
+        self.sword_kana = []
         self.bound_div = 0  # 前との関係　0:通常の下降　2:フレーズの境界か強調による上昇　1:並列
         self.acc_up = 1  # 上昇位置
         self.acc_down = 0  # 下降位置
@@ -105,9 +106,12 @@ class TtsWord:
         st = 0 if ix-1 < 0 else self.sword[ix-1]
         st += self.hasPause
         ed = self.sword[ix]+self.hasPause if ix < len(self.sword) else len(self.moras)
-        kana = ''
-        for ii in range(st, ed):
-            kana += self.moras[ii].get_kana()
+        if len(self.sword_kana) > ix:
+            kana = self.sword_kana[ix]
+        else:
+            kana = ''
+            for ii in range(st, ed):
+                kana += self.moras[ii].get_kana()
         return kana, self.moras[st].get_st(), self.moras[ed-1].get_ed()
 
     def set_hasPause(self):
@@ -375,6 +379,10 @@ class Tts:
                 continue
             for sw in kwrd.sword:
                 self.words[-1].sword.append(sw)
+            if len(kwrd.sword_kana)>0:
+                for sw in kwrd.sword_kana:
+                    self.words[-1].sword_kana.append(sw)
+
             if kwrd.bound_pau:
                 self.add_pause(kwrd)
 
@@ -448,7 +456,7 @@ class Tts:
                             mr.vlen = tphn[tix].xmax - tphn[tix].xmin
                             tix += 1
                         else:
-                            logging.error(f'NO SP: {tphn[tix-1].text}, {tphn[tix-1].text}, {tphn[tix].text}, {tphn[tix+1].text} ')
+                            logging.error(f'NO SP: {tphn[tix-1].text}, {tphn[tix-1].text}, {tphn[tix].text}, {tphn[tix+1].text} {tphn[tix].xmin}')
                             raise Exception('NO SP')
                         continue
                     if mr.cons:
@@ -538,7 +546,7 @@ class Tts:
                 for mr in wrd.moras:
                     mr.div_all()
 
-def textGrid_to_Tts(tg, f0=None, f0r=None):
+def textGrid_to_Tts(tg, f0=None, f0r=None, force_clJ=False):
     ks = utils.text.kana.KanaSent()
     kana = tg.get_jeitaKana()
     ks.set_kana(kana)
@@ -550,7 +558,7 @@ def textGrid_to_Tts(tg, f0=None, f0r=None):
         ks.add_sword(swrds)
     tts = Tts()
     tts.from_kanaSent(ks)
-    tts.set_time(tg)
+    tts.set_time(tg, force_clJ=force_clJ)
     if f0 is not None:
         tts.set_f0(f0, f0r)
 
@@ -643,6 +651,51 @@ def tts_to_textGrid(tts, sword_flg=True):
     tg.addFrameNum(tts.fr_st, tts.fr_fps, tts.fr_fn)
 
     return tg
+
+
+def set_default_join(tts):
+    lmr = None
+    for mr in tts.moras:
+        if lmr is not None:
+            if mr.vow == 'H':
+                mr.join_V = True
+
+            if mr.hasCL:
+                if lmr.vow == '#' or lmr.vow.startswith('sp') or lmr.cons == 'Q' or lmr.vow == 'Q':
+                    mr.joinCL = True
+            elif len(mr.cons)>0:
+                if lmr.cons == 'Q' or lmr.vow == 'Q':
+                    mr.join_C = True
+
+        lmr = mr
+
+
+def set_default_cl_z(tts):
+    for wrd in tts.words:
+        for ix, mr in enumerate(wrd.moras):
+            if mr.cons.startswith('z'):
+                if ix == 0:
+                    if mr.hasCL == False:
+                        mr.CL_len = mr.clen / 3
+                        mr.clen = mr.clen - mr.CL_len
+                        mr.hasCL = True
+                else:
+                    if wrd.moras[ix-1].cons == 'Q' or wrd.moras[ix-1].cons == 'N' or wrd.moras[ix - 1].vow == 'Q' or wrd.moras[ix - 1].vow == 'N' or wrd.moras[ix -1].vow.startswith('sp'):
+                        if mr.hasCL == False:
+                            mr.CL_len = mr.clen / 3
+                            mr.clen = mr.clen - mr.CL_len
+                            mr.hasCL = True
+                            mr.joinCL = mr.join_C
+                            mr.join_C = False
+                    else:
+                        if mr.hasCL == True:
+                            mr.clen = mr.clen + mr.CL_len
+                            mr.CL_len = 0.0
+                            mr.hasCL = False
+                            mr.join_C = mr.joinCL
+                            mr.joinCL=False
+
+
 
 
 if __name__ == "__main__":

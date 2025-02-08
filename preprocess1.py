@@ -140,11 +140,17 @@ if TESTMAIN == False:
 
         file_ids = DataIdList(filename=f'{cfg.data.base_dir}/dataset_input.csv')
         stats_file = f'{cfg.data.base_dir}/{cfg.data.stats_dir}/{cfg.data.stats_file[0]}'
-        stats_file_stft = f'{cfg.data.base_dir}/{cfg.data.stats_dir}/{cfg.data.stats_file[1]}'
-        stats_file_mfcc = f'{cfg.data.base_dir}/{cfg.data.stats_dir}/{cfg.data.stats_file[2]}'
         wcof = WorldCof(stats_file)
-        scof = StatsCof(stats_file_stft)
-        mcof = StatsCof(stats_file_mfcc)
+        if len(cfg.data.stats_file)>1:
+            stats_file_stft = f'{cfg.data.base_dir}/{cfg.data.stats_dir}/{cfg.data.stats_file[1]}'
+            scof = StatsCof(stats_file_stft)
+        else:
+            scof = None
+        if len(cfg.data.stats_file)>2:
+            stats_file_mfcc = f'{cfg.data.base_dir}/{cfg.data.stats_dir}/{cfg.data.stats_file[2]}'
+            mcof = StatsCof(stats_file_mfcc)
+        else:
+            mcof = None
         feats_bdir = f'{cfg.data.base_dir}/{cfg.data.input_dir}'
         target_bdir = f'{cfg.data.base_dir}/{cfg.data.target_dir}'
         ofeats_bdir = f'{cfg.data.train_dir}/{cfg.data.input_dir}'

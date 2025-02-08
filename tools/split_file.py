@@ -162,32 +162,48 @@ def split_file_for_textGrid(fnb, st, ed, ph_st, ph_ed, iwavfn, owavfn, itgfn, ot
 
 
 
-def split_file_for_textGrid_all(lstfn, iWavDir, iTgDir, oWavDir, oTgDir):
+def split_file_for_textGrid_all(lstfn, iWavDir, iTgDir, oWavDir, oTgDir, mrifnb_, wvext, tg_lower=False, endtime=18.1784):
     with open(lstfn) as ifs:
         for ll in ifs:
             ee = ll.strip().split()
             fnb = ee[0]
-            st = float(ee[3])
-            ph_st = float(ee[1]) - st
-            ed = float(ee[4])
-            ph_ed = float(ee[2]) - st
+            #st = float(ee[3])
+            st = float(ee[1])
+            #ph_st = float(ee[1]) - st
+            ph_st = 0.1
+            #ed = float(ee[4])
+            if ee[2] == 'None':
+                ed = endtime
+            else:
+                ed = float(ee[2])
+            #ph_ed = float(ee[2]) - st
+            ph_ed = ed - st - 0.1
             fnb_ = fnb.split('_')[0]
-            iwavfn = f'{iWavDir}/{ee[5]}.WAV'
+            mrifnb = f'{mrifnb_}{ee[-1]}'
+            iwavfn = f'{iWavDir}/{ee[-1]}{wvext}'
             owavfn = f'{oWavDir}/{fnb}.wav'
-            itgfn = f'{iTgDir}/{fnb_}.TextGrid'
+            if tg_lower:
+                itgfn = f'{iTgDir}/{fnb_}.TextGrid'
+            else:
+                itgfn = f'{iTgDir}/{fnb_.upper()}.TextGrid'
             otgfn = f'{oTgDir}/{fnb}.TextGrid'
-            split_file_for_textGrid(fnb, st, ed, ph_st, ph_ed, iwavfn, owavfn, itgfn, otgfn)
+            #print(f"write {owavfn} {otgfn}")
+            split_file_for_textGrid(mrifnb, st, ed, ph_st, ph_ed, iwavfn, owavfn, itgfn, otgfn)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("input_wav")
     parser.add_argument("input_tgrid")
-    parser.add_argument('-l',"--list", default="")
+    parser.add_argument("--fnb", default="")
+    parser.add_argument('-l', "--list", default="")
     parser.add_argument("-m", "--mode", default="TG")
     parser.add_argument("--Fs", type=int, default=-1)
     parser.add_argument("--owav", default="out")
     parser.add_argument('-o', "--odir", default="out")
+    parser.add_argument('--wvext', default='.WAV')
+    parser.add_argument('--edtime', type=float, default=18.8784)
+    parser.add_argument('--tglower', action='store_true')
     parser.add_argument('--check', '-c', action='store_true')
     parser.add_argument('--verbose', '-v', action='store_true')
     parser.add_argument('--debug', '-d', action='store_true')
@@ -205,7 +221,7 @@ if __name__ == "__main__":
             logging.basicConfig(level=logging.INFO)
 
     if args.mode == 'TG':
-        split_file_for_textGrid_all(args.list, args.input_wav, args.input_tgrid, args.owav, args.odir)
+        split_file_for_textGrid_all(args.list, args.input_wav, args.input_tgrid, args.owav, args.odir, args.fnb, args.wvext, args.tglower, args.edtime)
     else:
         split_file_for_julius_seg(args.input_wav, args.input_tgrid, args.odir, args.Fs, args.check)
 

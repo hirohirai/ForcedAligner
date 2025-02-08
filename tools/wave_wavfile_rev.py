@@ -10,20 +10,26 @@ import scipy.io.wavfile as wavfile
 from fractions import Fraction
 from scipy import signal
 from matplotlib import pyplot as plt
+import librosa
 
 class Wave_info():
-	def __init__(self,path,sampling = None,n_fft=512,hop_length=256):
+	def __init__(self,path,sampling = None,n_fft=512,hop_length=256, cof=1.0):
 		'''
 		pathからwavデータを読み取る
 		samplingにサンプリング周期(主に16000)を入れるとダウンサンプリングする
 		'''
 		if isinstance(path, str):
 			self.path = path
-			self.samplerate,self.wave = wavfile.read(path)
+			if sampling is None:
+				self.samplerate, self.wave = wavfile.read(path)
+			else:
+				self.wave, self.samplerate = librosa.load(path, sr=sampling)
+				self.wave = self.wave*32767
 		else:
 			self.path = None
 			self.wave = path
 			self.samplerate = sampling
+		self.wave = self.wave * cof
 
 		if len(self.wave.shape) >1:
 			self.wave = self.wave[:,1]

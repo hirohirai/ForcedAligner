@@ -23,7 +23,7 @@ def index_zero(wv):
     ix[0] = ix[-1] = False
     return ix
 
-def add_noize(wv):
+def add_noise(wv):
     ix = index_zero(wv)
     if wv.dtype == np.int16:
         wv[ix] = np.array(np.random.rand(len(wv[ix]))*6 -3, dtype=wv.dtype)

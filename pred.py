@@ -98,7 +98,7 @@ def make_mfcc(args):
     mfcc = mfcc.T
     return mfcc
 
-def make_mgc(args):
+def make_mgc_old(args):
     mgcfn = f'{args.world}.mgc'
     capfn = f'{args.world}.cap'
     f0fn = f'{args.world}.f0'
@@ -109,6 +109,14 @@ def make_mgc(args):
     cap = cap.reshape(int(len(cap) / args.capP), args.capP)
     f0 = np.fromfile(f0fn, dtype=np.float64)
     return np.hstack([f0[:, np.newaxis], mgc, cap])
+
+def make_mgc(args):
+    w_ = np.load(args.world)
+    if args.mgcPo>0:
+        ret = np.hstack([w_['f0'][:, np.newaxis], w_['mgc'][:, :args.mgcPo], w_['cap']])
+    else:
+        ret = np.hstack([w_['f0'][:, np.newaxis], w_['mgc'], w_['cap']])
+    return ret
 
 def make_spc(args):
     [wv, sr] = librosa.load(args.wav, sr=10000)
@@ -185,9 +193,9 @@ if __name__ == "__main__":
                         help='[string/path] Load model')
     parser.add_argument('--weights', '-w', default='exp/best_loss.pth', type=str,
                         help='[string/path] Load in different model Weights')
-    parser.add_argument('--mcof', default='data/stats/mfcc.npz', type=str, help='load Path')
+    parser.add_argument('--mcof', default='', type=str, help='load Path')
     parser.add_argument('--wcof', default='data/stats/world.npz', type=str, help='load Path')
-    parser.add_argument('--scof', default='data/stats/stft.npz', type=str, help='load Path')
+    parser.add_argument('--scof', default='', type=str, help='load Path')
     parser.add_argument('--world', '-i', default='', type=str, help='load Path')
     parser.add_argument('--mgcP', default=45, type=int, help='load Path')
     parser.add_argument('--capP', default=2, type=int, help='load Path')

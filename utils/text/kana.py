@@ -257,6 +257,7 @@ class Word:
     def __init__(self):
         self.phs = []
         self.sword = []
+        self.sword_kana = []
         self.accup = 1
         self.accdown = 0
         self.acclevel = 1
@@ -346,14 +347,17 @@ class Word:
 
     def add_sword(self, swrs, spo):
         pp = 0
+        c_swrd = swrs[spo].split(':')[0] if spo < len(swrs) else ''
         for phix, ph in enumerate(self.phs, 1):
-            if swrs[spo][pp:].startswith(ph):
+            if c_swrd[pp:].startswith(ph):
                 pp += len(ph)
-                if len(swrs[spo]) == pp:
+                if len(c_swrd) == pp:
                     spo += 1
                     pp = 0
+                    c_swrd = swrs[spo].split(':')[0] if spo < len(swrs) else ''
                     if phix < len(self.phs):
                         self.sword.append(phix)
+                    self.sword_kana.append(swrs[spo - 1])
             else:
                 logger.error(f'sword NEQ: {swrs[spo]} {pp} {ph}')
 

@@ -98,7 +98,7 @@ def preprocess(spk, f_ids, stats_bdir, stats_file, feats_dir, mgcP, capP, ffthn,
 
 if TESTMAIN == False:
 
-    @hydra.main(version_base='1.2', config_path="conf", config_name='config_atrdb')
+    @hydra.main(version_base='1.2', config_path="conf", config_name='config')
     def my_app(cfg: DictConfig) -> None:
         #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

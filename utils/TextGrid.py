@@ -187,6 +187,12 @@ class TextGrid:
                     self.xmax = float(ee[-1])
                 ix += 1
 
+    def get_item_ix(self, name):
+        for ix, itm in enumerate(self.item):
+            if name in itm.name:
+                return ix
+        return -1
+
     def clear_phoneme(self):
         self.item = [itm for itm in self.item if itm.name != '"phoneme"']
 
@@ -292,17 +298,18 @@ class TextGrid:
         else:
             self.item[-1].append_interval(text, st, ed)
 
-    def addFrameNum(self, stposi, fps=27.1739, fn=''):
+    def addFrameNum(self, stposi, fps=27.1739, fn='', frate=-1):
         if fps == 0.0:
             return
         import math
-        frate = 1/ fps
+        if frate<0:
+            frate = 1/ fps
         if len(self.item) > 0 and self.item[-1].name == '"frame"':
             self.item = self.item[:-1]
         self.item.append(Item('"IntervalTier"', '"frame"'))
         self.xmin = 0.0
-        stn = math.floor((self.xmin + stposi)/ frate) + 1
-        edn = math.ceil((self.xmax + stposi)/ frate)
+        stn = math.floor((self.xmin + stposi)/ frate + 0.00001) + 1
+        edn = math.ceil((self.xmax + stposi)/ frate - 0.00001)
         #num = math.floor(stposi / frate)
         st = 0.0
         #ed = (num +1) * frate - stposi
@@ -315,11 +322,21 @@ class TextGrid:
             st = ed
             ed += frate
 
+    def copyFrameNum(self, tg):
+        if len(self.item) > 0 and self.item[-1].name == '"frame"':
+            self.item = self.item[:-1]
+        self.item.append(Item('"IntervalTier"', '"frame"'))
+        for frm in tg.get_frame():
+            self.item[-1].append_interval(frm.text, frm.xmin, frm.xmax)
+
+
     def addStEd(self, ixs=[0,1,2,3,4]):
         if isinstance(ixs, int):
             ixs = [ixs,]
         for ix in ixs:
             if ix < len(self.item):
+                if self.item[ix].name == '"frame"':
+                    continue
                 self.item[ix].xmin = self.xmin
                 self.item[ix].xmax = self.xmax
                 if len(self.item) > 0 and len(self.item[ix].intervals) > 0:
@@ -447,17 +464,19 @@ class TextGrid:
                 obuf += str(itm)
         return obuf
 
-    def getStEd(self):
+    def getStEd(self, inx=0):
+        if isinstance(inx, str):
+            inx = self.get_item_ix(inx)
         st = -1
         ed = -1
-        if len(self.item) > 0:
-            for ii in self.item[0].intervals:
+        if len(self.item) > inx:
+            for ii in self.item[inx].intervals:
                 if ii.text != "" and ii.text != "sp" and ii.text != '#':
                     st = ii.xmin
                     break
-            for ix in range(len(self.item[0].intervals)):
-                if self.item[0].intervals[-1-ix].text != "" and self.item[0].intervals[-1 - ix].text != "sp" and self.item[0].intervals[-1 - ix].text != "#":
-                    ed = self.item[0].intervals[-1-ix].xmax
+            for ix in range(len(self.item[inx].intervals)):
+                if self.item[inx].intervals[-1-ix].text != "" and self.item[inx].intervals[-1 - ix].text != "sp" and self.item[inx].intervals[-1 - ix].text != "#":
+                    ed = self.item[inx].intervals[-1-ix].xmax
                     break
         return st, ed
 
@@ -474,7 +493,7 @@ class TextGrid:
             if it_.name == '"word"':
                 swrds = []
                 for ii in it_.intervals:
-                    if len(ii.text) > 0 and ii.text not in ['sp', '#']:
+                    if len(ii.text) > 0 and ii.text not in ['sp', '#', 'sp0', 'sp1', 'sp2']:
                         swrds.append(ii.text)
                 outk.add_sword(swrds)
                 break
@@ -526,6 +545,16 @@ class TextGrid:
                 else:
                     return itm.intervals[ii]
         return None
+
+    def get_trans(self, ii=None):
+        for itm in self.item:
+            if itm.name == '"trans"':
+                if ii is None:
+                    return itm.intervals
+                else:
+                    return itm.intervals[ii]
+        return None
+
 
     def get_sword(self, ii=None):
         for itm in self.item:
@@ -642,7 +671,7 @@ def main11(args):
 def main12(args):
     import Tts
     tg = TextGrid(args.file1)
-    tts = Tts.textGrid_to_Tts(tg)
+    tts = Tts.textGrid_to_Tts(tg, force_clJ=True)
     tg2 = Tts.tts_to_textGrid(tts)
     tg2.correct_times()
     print(str(tg2))

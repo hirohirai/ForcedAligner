@@ -29,6 +29,8 @@ def main(args):
     eix2 = round((len(buf)-eix) * args.rate2) + eix
     if args.rate2 > 0 and len(buf) - eix2 <= 0 and len(buf) - eix > 2:
         eix2 = len(buf) - 1
+    elif args.rate2 < 0.0:
+        eix2 = len(buf)
     buf1 = buf[:eix]
     buf1.sort()
     buf2 = buf[eix:eix2]
@@ -53,7 +55,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--input", default="-")
-    parser.add_argument("-r", "--rate", type=float, default=0.95)
+    parser.add_argument("-r", "--rate", type=float, default=0.9)
     parser.add_argument("--rate2", type=float, default=0.9)
     parser.add_argument("-v", "--verbose", action='store_true')
     args = parser.parse_args()

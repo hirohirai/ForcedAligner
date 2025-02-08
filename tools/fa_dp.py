@@ -16,7 +16,7 @@ import scipy.special
 
 import utils.TextGrid
 import utils.text.kana2rtMRI
-from utils.Tts import Tts, tts_to_textGrid
+from utils.Tts import Tts, tts_to_textGrid, set_default_join
 from utils.text.rtMRI import rom_to_id
 from utils.dur_stats import DurLogLikelihood
 
@@ -45,8 +45,9 @@ class Unit:
         return f'{self.labelIx}: {self.cost}  {self.best_cost} {self.best_len}'
 
 
-def get_tts(tgFile):
-    tg = utils.TextGrid.TextGrid(tgFile)
+def get_tts(tg):
+    if isinstance(tg, str):
+        tg = utils.TextGrid.TextGrid(tg)
     ks = utils.text.kana.KanaSent()
     kana = tg.get_jeitaKana()
     ks.set_kana(kana)
@@ -61,12 +62,16 @@ def get_tts(tgFile):
     tts.xmin = tg.xmin
     tts.xmax = tg.xmax
     tts.text = tg.get_text()
-    st_time = tg.getStEd()[0]
+    sted_time = tg.getStEd('trans')
+    if sted_time[0]<0:
+        sted_time = tg.getStEd()
 
-    return tts, st_time
+    return tts, sted_time
 
-def get_labels(tgFile):
-    tts, st_time = get_tts(tgFile)
+def get_labels(tg):
+    if isinstance(tg, str):
+        tg = utils.TextGrid.TextGrid(tg)
+    tts, sted_time = get_tts(tg)
     labels = [Label('sp'), ]
     last_vow = ''
     for phr in tts.phrases:
@@ -85,7 +90,7 @@ def get_labels(tgFile):
                         labels.append(Label(mr.vow))
                         last_vow = mr.vow
     labels.append(Label('sp'))
-    return labels, tts, st_time
+    return labels, tts, sted_time
 
 def create_network(labels, cost, dur_cost, width=0.005, p_len=0.3, s_len=1.5, dur_w=1.0):
     s_width = round(s_len / width)
@@ -180,6 +185,9 @@ def set_time(labels, tts, nets, st):
                             logger.error(f'{mr.vow} {labels[ix].phn} {times[ix]}')
                         mr.vlen = times[ix]
                         ix += 1
+
+
+    set_default_join(tts)
     tg = tts_to_textGrid(tts)
 
     return tg
@@ -202,25 +210,37 @@ def back_track(last_unit):
 
 
 def main(args):
-
-    labels, tts, st_time = get_labels(args.tgFile)
+    tgo = utils.TextGrid.TextGrid(args.tgFile)
+    labels, tts, sted_time = get_labels(tgo)
 
     cost = np.load(args.costFile)
     cost = np.log(scipy.special.softmax(cost, axis=1))
 
+    if args.ed_lbl>0:
+        labels = labels[args.st_lbl:args.ed_lbl]
+    else:
+        labels = labels[args.st_lbl:]
     if args.debug:
-        if args.ed_lbl>0:
-            labels = labels[args.st_lbl:args.ed_lbl]
-        else:
-            labels = labels[args.st_lbl:]
         for ix, lb in enumerate(labels):
-            print(ix, lb)
-        st_ix = int(round(args.st_time / 0.005))
-        if args.ed_time>0.0:
-            ed_ix = int(round(args.ed_time / 0.005))
-            cost = cost[st_ix:ed_ix]
-        else:
-            cost = cost[st_ix:]
+                print(ix, lb)
+
+    st_time = sted_time[0] - args.st_width if args.st_time<-0.000000001 else args.st_time
+    ed_time = sted_time[1] + args.st_width if args.ed_time<-0.000000001 else args.ed_time
+
+    if st_time<0.0:
+        st_time = 0.0
+        st_ix = 0
+    else:
+        st_ix = int(round(st_time / 0.005))
+        st_time = st_ix*0.005
+
+    ed_ix = int(round(ed_time / 0.005)) + 1
+    if ed_ix == 1 or ed_ix > len(cost):
+        ed_ix = len(cost)
+    ed_time = ed_ix * 0.005
+
+    cost = cost[st_ix:ed_ix]
+
 
     dur_cost = DurLogLikelihood(fn=args.durdic)
     last_unit = create_network(labels, cost, dur_cost, p_len=args.p_len, s_len=args.s_len, dur_w=args.dur_weight)
@@ -230,10 +250,9 @@ def main(args):
         for ix, nn in enumerate(nets):
             print(ix, labels[nn.labelIx].phn,nn.labelIx)
     else:
-        st_time = st_time - args.st_width if args.st_width > 0.0 else 0.0
         tg = set_time(labels, tts, nets, st_time)
+        tg.copyFrameNum(tgo)
         print(tg)
-
 
 
 if __name__ == "__main__":
@@ -248,7 +267,7 @@ if __name__ == "__main__":
     parser.add_argument('--durdic', default='data/stats/dur_dic.pkl')
     parser.add_argument('--st_lbl', type=int, default=0)
     parser.add_argument('--ed_lbl', type=int, default=-1)
-    parser.add_argument('--st_time', type=float, default=0.0)
+    parser.add_argument('--st_time', type=float, default=-1.0)
     parser.add_argument('--ed_time', type=float, default=-1.0)
     # parser.add_argument('-s', '--opt_str', default='')
     # parser.add_argument('--opt_int',type=int, default=1)

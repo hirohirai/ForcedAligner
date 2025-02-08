@@ -10,6 +10,7 @@ import pandas as pd
 
 from math import ceil
 import sys
+import argparse
 
 from wave_wavfile_rev import Wave_info
 
@@ -20,8 +21,8 @@ from wave_wavfile_rev import Wave_info
 class Noise(Wave_info):
 	def __init__(self,path,sampling=None,
 		n_fft=2048,hop_length=128,noise_path=None,
-		alpha=5.0,mu=1e2):
-		super().__init__(path,sampling,n_fft,hop_length)
+		alpha=5.0,mu=1e2, cof=1.0):
+		super().__init__(path,sampling,n_fft,hop_length, cof)
 		self.alpha=alpha
 		self.mu=mu
 		if noise_path!=None:
@@ -79,6 +80,21 @@ class Noise(Wave_info):
 
 
 if __name__ == "__main__":
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-i', '--ifile')
+	parser.add_argument('-o', '--ofile')
+	parser.add_argument('-a', '--alpha', type=float, default=4.0)
+	parser.add_argument('-c', '--cof', type=float, default=1.0)
+	parser.add_argument('--Fs', type=int, default=20000)
+	parser.add_argument('--hop', type=int, default=2)
+	parser.add_argument('--fftlen', type=int, default=1024)
+	parser.add_argument('--nFiles', '-n', action='store_true')
+	# parser.add_argument('-i', '--input',type=argparse.FileType('r'), default='-')
+	parser.add_argument('--verbose', '-v', action='store_true')
+	parser.add_argument('--debug', '-d', action='store_true')
+	parser.add_argument('--log', default='')
+	args = parser.parse_args()
+
 	'''
 	with open('./split_data_list.txt') as f:
 		for line in f:
@@ -105,17 +121,23 @@ if __name__ == "__main__":
 	'''
 	#noise = Noise(sys.argv[1], sampling=44100, hop_length=4, alpha=4.0, mu=1e2)
 	#noise_files = ['noise_data/noi_004.wav','noise_data/noi_005.wav','noise_data/noi_006.wav','noise_data/noi_007.wav','noise_data/noi_008.wav']
-	noise_files = ['noise_data/20220727_28/noi27_010.wav', 'noise_data/20220727_28/noi27_050.wav',
-				   'noise_data/20220727_28/noi27_090.wav','noise_data/20220727_28/noi27_120.wav',
-				   'noise_data/20220727_28/noi28_010.wav', 'noise_data/20220727_28/noi28_030.wav',
-				   'noise_data/20220727_28/noi28_050.wav',]
-	nfn = random.choice(noise_files)
+
 	'''
 	if sys.argv[1] == 'nofile':
 		noise = Noise(sys.argv[2], sampling=20000, n_fft=1024, hop_length=2, alpha=4.0, mu=1e2)
 	else:
 		noise = Noise(sys.argv[2], sampling=20000, n_fft=1024, hop_length=2, alpha=4.0, mu=1e2, noise_path=sys.argv[1])
 	'''
-	noise = Noise(sys.argv[1], sampling=20000, n_fft=1024, hop_length=2, alpha=4.0, mu=1e2, noise_path=nfn)
+
+	if args.nFiles:
+		noise_files = ['noise_data/20220727_28/noi27_010.wav', 'noise_data/20220727_28/noi27_050.wav',
+					   'noise_data/20220727_28/noi27_090.wav', 'noise_data/20220727_28/noi27_120.wav',
+					   'noise_data/20220727_28/noi28_010.wav', 'noise_data/20220727_28/noi28_030.wav',
+					   'noise_data/20220727_28/noi28_050.wav', ]
+		nfn = random.choice(noise_files)
+	else:
+		nfn = None
+	noise = Noise(args.ifile, sampling=args.Fs, n_fft=args.fftlen, hop_length=args.hop, alpha=args.alpha, mu=1e2, noise_path=nfn, cof=args.cof)
+	# noise = Noise(sys.argv[1], sampling=20000, n_fft=1024, hop_length=2, alpha=3.0, mu=1e2, noise_path=None)
 	data = noise.spectrumSubtruction()
-	wavfile.write(sys.argv[2], noise.samplerate, data.astype(np.int16))
+	wavfile.write(args.ofile, noise.samplerate, data.astype(np.int16))

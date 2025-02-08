@@ -25,6 +25,7 @@ class DurLogLikelihood:
             self.set_data(durstats)
         if fn:
             self.load(fn)
+        self.cnv_lbl_tbl = {'fj':'f', 's_':'s'}
 
     def set_data(self, durstats):
         for ky in durstats.keys():
@@ -41,6 +42,8 @@ class DurLogLikelihood:
             return 0.0
         elif lbl.endswith("H"):
             lbl = lbl[0]
+        elif lbl in self.cnv_lbl_tbl:
+            lbl = self.cnv_lbl_tbl[lbl]
         return -np.log(2*np.pi) - np.log(self.std[lbl]) - (dur-self.av[lbl])**2 / self.std[lbl]**2 / 2
 
     def save(self, fn):

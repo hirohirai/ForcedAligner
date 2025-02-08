@@ -55,6 +55,7 @@ def code_world(spc, ap, sr, order):
 
 def ana(wvfn, f0fn, sr, ofn, mgc_order):
     wv, sr = librosa.load(wvfn, sr=sr, dtype=np.float64)
+    wv = wv*7
     if f0fn:
         f0 = np.fromfile(f0fn, dtype=np.float64)
         spc, ap, f0 = do_world_f0(wv, sr, f0)

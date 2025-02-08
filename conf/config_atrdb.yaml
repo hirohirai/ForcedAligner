@@ -19,8 +19,8 @@ input:
   world_f0_path: /home/hirai/work_local/Speech/DBS_/atr/world
   tgrid_path: /home/hirai/work_local/Speech/DBS_/atr/TextGrid
   wav_path: /home/hirai/work_local/Speech/DBS_/atr/nr_wav
-  spk_ptn: (...._2)/./
-  subdir:
+  spk_ptn: (...._2)/
+  subdir: ./
   mgc_order: 45
   cap_order: 2
   world_rate: 0.005
@@ -32,7 +32,8 @@ data:
   base_dir: data
   stats_dir: stats
   sampling_rate: 16000
-  stats_file: [world.npz, stft.npz, mfcc.npz]
+  # stats_file: [world.npz, stft.npz, mfcc.npz]
+  stats_file: [world.npz,]
   mgc_order: 25
   input_dir: in_feats
   #input_dir: in_test
@@ -45,12 +46,12 @@ data:
   dur_dic: dur_dic.pkl
 
   train:
-    id_list: data/dataset_input_M_train_wo101.csv
-    #id_list: data_t/data_test_train.csv
+    # id_list: data/dataset_input_M_train_wo101.csv
+    id_list: data/dataset_input_train.csv
 
   eval:
-    id_list: data/dataset_input_M_eval_wo101.csv
-    #id_list: data_t/data_test_eval.csv
+    #id_list: data/dataset_input_M_eval_wo101.csv
+    id_list: data/dataset_input_eval.csv
 
 # 1) none 2) tqdm
 tqdm: tqdm

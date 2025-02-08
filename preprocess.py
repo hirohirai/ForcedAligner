@@ -76,10 +76,14 @@ def add_phone_force(wix, LastIx, wrate, ed, ophn, lbl):
         wix += 1
     return wix
 
-def preprocess(f_id, tbdir, world_bdir, world_f0_bdir, wvbdir, feats_bdir, target_bdir, mgcPo, mgcP=45, capP=2, wrate=0.005, subdir=None):
+
+def preprocess(f_id, tbdir, world_bdir, wvbdir, feats_bdir, target_bdir, mgcPo, wrate=0.005, subdir=None):
     fnb = f'{f_id[0]}/{f_id[1][0]}/{f_id[1]}' if subdir else f'{f_id[0]}/{f_id[1]}'
-    tgfn = f'{tbdir}/{fnb}.TextGrid'
+    f_id_wv = f_id[0].split('_')[0]
+    fnb_wv = f'{f_id_wv}/{f_id[1][0]}/{f_id[1]}' if subdir else f'{f_id_wv}/{f_id[1]}'
+    tgfn = f'{tbdir}/{fnb_wv}.TextGrid'
     wvfn = f'{wvbdir}/{fnb}.wav'
+
     logger.debug(f'{tgfn}')
     tg = utils.TextGrid.TextGrid(tgfn)
     kana_sent = utils.text.kana.KanaSent()
@@ -94,15 +98,7 @@ def preprocess(f_id, tbdir, world_bdir, world_f0_bdir, wvbdir, feats_bdir, targe
 
     tts.lv_HtoXH()
 
-    mgcfn = f'{world_bdir}/{fnb}.mgc'
-    capfn = f'{world_bdir}/{fnb}.cap'
-    f0fn = f'{world_f0_bdir}/{fnb}.f0'
-    mgc = np.fromfile(mgcfn, dtype=np.float64)
-    mgc = mgc.reshape(int(len(mgc) / mgcP), mgcP)
-    mgc = mgc[:, :mgcPo]
-    cap = np.fromfile(capfn, dtype=np.float64)
-    cap = cap.reshape(int(len(cap) / capP), capP)
-    f0 = np.fromfile(f0fn, dtype=np.float64)
+    world = np.load(f'{world_bdir}/{fnb}.npz')
 
     [wv, sr] = librosa.load(wvfn, sr=10000)
     r = np.random.randn(len(wv)) * 1e-5
@@ -119,8 +115,8 @@ def preprocess(f_id, tbdir, world_bdir, world_f0_bdir, wvbdir, feats_bdir, targe
     StIx = int((sttime - 0.050) / wrate)
     wix = StIx
     LastIx = int((edtime + 0.050) / wrate)
-    if f0.shape[0] < LastIx:
-        LastIx = f0.shape[0]
+    if world['f0'].shape[0] < LastIx:
+        LastIx = world['f0'].shape[0]
     for phr in tts.phrases:
         for wd in phr.words:
             for mr in wd.moras:
@@ -173,7 +169,7 @@ def preprocess(f_id, tbdir, world_bdir, world_f0_bdir, wvbdir, feats_bdir, targe
 
 
     targets = np.array(ophn, dtype=int)
-    in_feats = np.hstack([f0[:, np.newaxis], mgc, cap])
+    in_feats = np.hstack([world['f0'][:, np.newaxis], world['mgc'][:,:mgcPo], world['cap']])
     #in_feats = wcof.encode(f0, mgc, cap)
     in_feats = in_feats[StIx:LastIx]
     stft = stft[StIx:LastIx]
@@ -227,7 +223,8 @@ if TESTMAIN == False:
         with ProcessPoolExecutor(cfg.N_jobs) as executor:
             futures = [
                 executor.submit(
-                    preprocess, f_id, tbdir, world_bdir, wv_bdir, feats_bdir, target_bdir, mgcPo, subdir=cfg.input.subdir
+                    preprocess, f_id, tbdir, world_bdir, wv_bdir, feats_bdir, target_bdir, mgcPo,
+                    subdir=cfg.input.subdir
                 )
                 for f_id in file_ids
             ]
@@ -237,20 +234,23 @@ if TESTMAIN == False:
 else:
     def my_app():
         logging.basicConfig(level=logging.WARNING)
-        f_id = ('F119', 'A39')
-        tbdir = '/home/hirai/work_local/Speech/DBS_/atr1/TG_csj'
-        world_bdir = '/home/hirai/work_local/Speech/DBS_/atr/world'
-        wv_bdir = '/home/hirai/work_local/Speech/DBS_/atr/wav'
-        stats_file = 'data/stats/world.npz'
-        stats_file_stft = 'data/stats/stft.npz'
-        wcof = WorldCof(stats_file)
-        scof = StatsCof(stats_file_stft)
+        f_id = ('F117_2', 'C25')
+        tbdir = '/home/hirai/work_local/Speech/DBS_/atr/TextGrid'
+        world_bdir = '/home/hirai/work_local/Speech/DBS_/atr/nr_world'
+        world_f0_bdir = '/home/hirai/work_local/Speech/DBS_/atr/nr_world'
+        wv_bdir = '/home/hirai/work_local/Speech/DBS_/atr/nr_wav'
+        # stats_file = 'data/stats/world.npz'
+        # stats_file_stft = 'data/stats/stft.npz'
+        # wcof = WorldCof(stats_file)
+        # scof = StatsCof(stats_file_stft)
         feats_bdir = 'data/testdir/in_feats'
         target_bdir = 'data/testdir/targets'
         mgcPo = 25
+        subdir = '.'
         os.makedirs(feats_bdir, exist_ok=True)
         os.makedirs(target_bdir, exist_ok=True)
-        preprocess(f_id, tbdir, world_bdir, wv_bdir, feats_bdir, target_bdir, mgcPo)
+        preprocess(f_id, tbdir, world_bdir, wv_bdir, feats_bdir, target_bdir, mgcPo, subdir=subdir)
+
 
 if __name__ == "__main__":
     my_app()
