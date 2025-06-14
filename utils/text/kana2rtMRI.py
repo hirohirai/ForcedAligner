@@ -174,6 +174,8 @@ def kana2rom_vc(kn):
         return kana2rom_v_tbl[kn]
     return None
 
+DEV={'a':'A', 'i':'I', 'u':'U', 'e':'E', 'o':'O'}
+
 def kana2roms(kn):
     roms = []
     ix = 0
@@ -189,7 +191,9 @@ def kana2roms(kn):
             roms.append(('', 'H'))
         elif kn[ix] == 'ッ':
             roms.append(('Q', ''))
-
+        elif kn[ix] == '％':
+            rm_ = roms.pop()
+            roms.append((rm_[0], DEV[rm_[1]]))
         ix += 1
 
     if ix < len(kn):
@@ -199,5 +203,8 @@ def kana2roms(kn):
             roms.append(kana2rom_v_tbl[kn[ix]])
         elif kn[ix] == 'ー':
             roms.append(('', 'H'))
+        elif kn[ix] == '％':
+            rm_ = roms.pop()
+            roms.append((rm_[0], DEV[rm_[1]]))
     return roms
 

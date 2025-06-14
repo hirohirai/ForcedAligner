@@ -141,6 +141,15 @@ class Item:
                 ix -= 1
         return ix
 
+    def find(self, tim):
+        for ix, it in enumerate(self.intervals):
+            if it.xmax >= tim:
+                break
+        if self.intervals[ix].xmin <= tim:
+            return ix
+        else:
+            return None
+
 
 class TextGrid:
     def __init__(self, ifs=None):
@@ -298,7 +307,7 @@ class TextGrid:
         else:
             self.item[-1].append_interval(text, st, ed)
 
-    def addFrameNum(self, stposi, fps=27.1739, fn='', frate=-1):
+    def addFrameNum(self, stposi, fps=27.1739, fn='', frate=-1, LastFull=True):
         if fps == 0.0:
             return
         import math
@@ -309,8 +318,11 @@ class TextGrid:
         self.item.append(Item('"IntervalTier"', '"frame"'))
         self.xmin = 0.0
         stn = math.floor((self.xmin + stposi)/ frate + 0.00001) + 1
-        edn = math.ceil((self.xmax + stposi)/ frate - 0.00001)
         #num = math.floor(stposi / frate)
+        if LastFull:
+            edn = math.floor((self.xmax + stposi)/ frate + 0.00001)
+        else:
+            edn = math.ceil((self.xmax + stposi)/ frate - 0.00001)
         st = 0.0
         #ed = (num +1) * frate - stposi
         ed = stn * frate - stposi
@@ -387,6 +399,13 @@ class TextGrid:
         for it in self.get_word():
             it.text = it.text.replace('ヅ', 'ズ')
 
+    def set_xmax_xmin(self, ed, st=0):
+        self.xmin = st
+        self.xmax = ed
+        for itm in self.item:
+            itm.xmin = st
+            itm.xmax = ed
+
     def add_time(self, addTime, ixs=[0,1,2,3,4]):
         self.xmin += addTime
         self.xmax += addTime
@@ -415,15 +434,23 @@ class TextGrid:
         for it_ in self.item:
             if it_.name == f'"{name}"':
                 return it_.find_st(tim)
+        return None
 
     def find_ed(self, name, tim):
         for it_ in self.item:
             if it_.name == f'"{name}"':
                 return it_.find_ed(tim)
+        return None
+
+    def find(self, name, tim):
+        for it_ in self.item:
+            if it_.name == f'"{name}"':
+                return it_.find(tim)
+        return None
 
     def find_ph(self, cph, lph=None, nph=None):
         if self.item[0].name != '"phoneme"':
-            None
+            return None
         rets =[]
         if not isinstance(cph, list):
             cph = [cph,]

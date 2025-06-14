@@ -19,13 +19,6 @@ from utils.TextGrid import TextGrid
 logger = logging.getLogger(__name__)
 
 
-def diff_phoneme(tg1, tg2):
-    phs1 = tg1.get_phoneme()
-    phs2 = tg2.get_phoneme()
-    for ph1, ph2 in zip(phs1, phs2):
-        if ph1.text != ph2.text:
-            return ph1.xmin, ph1.xmax
-
 def Print_(fnb, tg, st, ed):
     if st >= len(tg.get_phoneme()):
         st = len(tg.get_phoneme()) -1
@@ -35,7 +28,7 @@ def Print_(fnb, tg, st, ed):
 
     print(fnb, tg.get_phoneme(st).xmin, tg.get_phoneme(ed-1).xmax)
 
-def main(args):
+def diff_phoneme(args):
     fnb = os.path.splitext(os.path.basename(args.file1))[0]
     tg1 = TextGrid(args.file1)
     tg2 = TextGrid(args.file2)
@@ -54,9 +47,21 @@ def main(args):
         lpos_b = mt.b + mt.size
 
 
-    #sted = diff_phoneme(tg1, tg2)
-    #if not sted is None:
-    #    print(fnb, sted[0], sted[1])
+def diff_sp_time(args):
+    fnb = os.path.splitext(os.path.basename(args.file1))[0]
+    tg1 = TextGrid(args.file1)
+    tg2 = TextGrid(args.file2)
+    for ix,(ph1, ph2) in enumerate(zip(tg1.get_phoneme(), tg2.get_phoneme())):
+        if ph1.text[:2] == 'sp':
+            if abs(ph1.xmin - ph2.xmin) > 0.0001:
+                Print_(fnb, tg1, ix, ix+1)
+
+
+def main(args):
+    if args.ph:
+        diff_phoneme(args)
+    if args.sp_time:
+        diff_sp_time(args)
 
 if __name__ == "__main__":
     # Parse Arguments
@@ -66,6 +71,8 @@ if __name__ == "__main__":
     # parser.add_argument('-s', '--opt_str', default='')
     # parser.add_argument('--opt_int',type=int, default=1)
     # parser.add_argument('-i', '--input',type=argparse.FileType('r'), default='-')
+    parser.add_argument('--ph', action='store_true')
+    parser.add_argument('--sp_time', action='store_true')
     parser.add_argument('--verbose', '-v', action='store_true')
     parser.add_argument('--debug', '-d', action='store_true')
     parser.add_argument('--log', default='')

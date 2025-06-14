@@ -61,10 +61,9 @@ def main(args):
     tts = textGrid_to_Tts(tg, force_clJ=True)
 
     # ポーズの直後だけにフレーズ境界を入れる
-    reset_bound_div(tts)
-
+    #reset_bound_div(tts)
     # sp のみに変更
-    reset_sp(tts)
+    #reset_sp(tts)
 
     set_default_cl_z(tts)
     set_default_join(tts)

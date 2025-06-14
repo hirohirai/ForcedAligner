@@ -87,7 +87,7 @@ class TtsMora:
         return outs
 
 
-B_DIV_SYM=['', '，', '｜']
+B_DIV_SYM=['＋', '', '，', '｜']
 
 class TtsWord:
     def __init__(self):
@@ -127,7 +127,7 @@ class TtsWord:
         return self.moras[-1].get_ed()
 
     def get_kana(self, stp=0):
-        kana = B_DIV_SYM[self.bound_div]
+        kana = B_DIV_SYM[self.bound_div+1]
         stp = 1 if self.moras[0].vow.startswith('sp') else 0
         for ix, mr in enumerate(self.moras[stp:]):
             ka = mr.get_kana()
@@ -358,6 +358,8 @@ class Tts:
             cwrd.bound_div = 2
         elif kwrd.bound_div == '，':
             cwrd.bound_div = 1
+        elif kwrd.bound_div == '＋':
+            cwrd.bound_div = -1
 
         phs = kana2roms(''.join(kwrd.phs))
         for ph in phs:
@@ -376,6 +378,8 @@ class Tts:
                     self.words[-1].bound_div = 2
                 elif kwrd.bound_div == '，' and self.words[-1].bound_div < 1:
                     self.words[-1].bound_div = 1
+                elif kwrd.bound_div == '＋' and self.words[-1].bound_div < 1:
+                    self.words[-1].bound_div = -1
                 continue
             for sw in kwrd.sword:
                 self.words[-1].sword.append(sw)
