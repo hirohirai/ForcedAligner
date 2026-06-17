@@ -57,14 +57,15 @@ def reset_sp(tts):
 
 
 def main(args):
-    tg = TextGrid(args.file1)
+    tg = TextGrid(args.input)
     tts = textGrid_to_Tts(tg, force_clJ=True)
 
     # ポーズの直後だけにフレーズ境界を入れる
     reset_bound_div(tts)
 
     # sp のみに変更
-    reset_sp(tts)
+    if not 'P' in args.mode:
+        reset_sp(tts)
 
     set_default_cl_z(tts)
     set_default_join(tts)
@@ -72,24 +73,32 @@ def main(args):
     tgo = tts_to_textGrid(tts)
     #tgo = set_xmax_phoneme(tgo)
     tgo.correct_times()
+    tg.correctFrameNum()
 
-    # trans層の始端、終端はずれていても採用する
-    sted = tg.getStEd('trans')
-    tr = tgo.get_trans()
-    tr[1].xmin = sted[0]
-    tr[-1].xmin = sted[1]
+    # trans層の始端、終端はずれていても採用する 多分、先頭終端を決めてfa_dpするため
+    if not 'T' in args.mode:
+        sted = tg.getStEd('trans')
+        tr = tgo.get_trans()
+        tr[1].xmin = sted[0]
+        tr[0].xmax = tr[1].xmin
+        tr[-1].xmin = sted[1]
+        tr[-2].xmax = tr[-1].xmin
 
-    with open(args.ofile, 'w') as ofs:
-        print(tgo, file=ofs)
+    if args.output == '-':
+        print(tgo)
+    else:
+        with open(args.output, 'w') as ofs:
+            print(tgo, file=ofs)
 
 if __name__ == "__main__":
     # Parse Arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('file1')
-    parser.add_argument('ofile')
+    #parser.add_argument('file1')
+    #parser.add_argument('ofile')
     # parser.add_argument('-s', '--opt_str', default='')
-    # parser.add_argument('--opt_int',type=int, default=1)
-    # parser.add_argument('-i', '--input',type=argparse.FileType('r'), default='-')
+    parser.add_argument('--mode','-m', default='') # 'P' or 'T'
+    parser.add_argument('-i', '--input', type=argparse.FileType('r'), default='-')
+    parser.add_argument('-o', '--output', default='-')
     parser.add_argument('--verbose', '-v', action='store_true')
     parser.add_argument('--debug', '-d', action='store_true')
     parser.add_argument('--log', default='')

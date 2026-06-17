@@ -64,7 +64,7 @@ class RtmriPos:
                                     self.body[ix].append(SentPos(sname, self.fnums[ix], time))
 
                     for ix in range(len(self.body)):
-                        if self.body[ix][-1].ed == time:
+                        if len(self.body[ix])>0 and self.body[ix][-1].ed == time:
                             if '_' in self.body[ix][-1].name:
                                 self.body[ix] = self.body[ix][:-1]
                             else:

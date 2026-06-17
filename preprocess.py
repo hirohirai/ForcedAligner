@@ -205,7 +205,7 @@ if TESTMAIN == False:
 
         tbdir = cfg.input.tgrid_path
         world_bdir = cfg.input.world_path
-        world_f0_bdir = cfg.input.world_f0_path
+        #world_f0_bdir = cfg.input.world_f0_path
         wv_bdir = cfg.input.wav_path
 #        stats_file = f'{cfg.data.base_dir}/{cfg.data.stats_dir}/{cfg.data.stats_file[0]}'
 #        stats_file_stft = f'{cfg.data.base_dir}/{cfg.data.stats_dir}/{cfg.data.stats_file[1]}'
@@ -237,7 +237,7 @@ else:
         f_id = ('F117_2', 'C25')
         tbdir = '/home/hirai/work_local/Speech/DBS_/atr/TextGrid'
         world_bdir = '/home/hirai/work_local/Speech/DBS_/atr/nr_world'
-        world_f0_bdir = '/home/hirai/work_local/Speech/DBS_/atr/nr_world'
+        #world_f0_bdir = '/home/hirai/work_local/Speech/DBS_/atr/nr_world'
         wv_bdir = '/home/hirai/work_local/Speech/DBS_/atr/nr_wav'
         # stats_file = 'data/stats/world.npz'
         # stats_file_stft = 'data/stats/stft.npz'

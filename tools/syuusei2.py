@@ -57,7 +57,7 @@ def reset_sp(tts):
 
 
 def main(args):
-    tg = TextGrid(args.file1)
+    tg = TextGrid(args.inFn)
     tts = textGrid_to_Tts(tg, force_clJ=True)
 
     # ポーズの直後だけにフレーズ境界を入れる
@@ -71,6 +71,7 @@ def main(args):
     tgo = tts_to_textGrid(tts)
     #tgo = set_xmax_phoneme(tgo)
     tgo.correct_times()
+    tg.correctFrameNum()
 
     # trans層の始端、終端はずれていても採用する
     sted = tg.getStEd('trans')
@@ -78,14 +79,15 @@ def main(args):
     tr[1].xmin = sted[0]
     tr[-1].xmin = sted[1]
 
-    with open(args.ofile, 'w') as ofs:
-        print(tgo, file=ofs)
+    print(tgo, file=args.outFn)
 
 if __name__ == "__main__":
     # Parse Arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('file1')
-    parser.add_argument('ofile')
+    parser.add_argument('--inFn', '-i', type=argparse.FileType('r'), default=sys.stdin)
+    #parser.add_argument('file1')
+    parser.add_argument('--outFn', '-o', type=argparse.FileType('w'), default=sys.stdout)
+    #parser.add_argument('ofile')
     # parser.add_argument('-s', '--opt_str', default='')
     # parser.add_argument('--opt_int',type=int, default=1)
     # parser.add_argument('-i', '--input',type=argparse.FileType('r'), default='-')

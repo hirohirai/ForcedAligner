@@ -335,6 +335,8 @@ class Tts:
             if not self.moras[-1].vow.startswith('sp'):
                 self.moras.append(TtsMora(['', 'sp0']))
                 self.words[-1].moras.append(self.moras[-1])
+            else:
+                self.moras[-1].vow = 'sp0'
         else:
             if kwrd.bound_pau == '＿2':
                 if not self.moras[-1].vow.startswith('sp'):
@@ -347,7 +349,7 @@ class Tts:
                     self.moras.append(TtsMora(['', 'sp1']))
                     self.words[-1].moras.append(self.moras[-1])
                 elif kwrd.bound_pau == '＿0':
-                    self.moras[-1].vow = 'sp1'
+                    self.moras[-1].vow = 'sp0'
         self.words[-1].hasPause = len(self.words[-1].moras)
 
     def add_mora(self, kwrd, cwrd):
@@ -421,13 +423,15 @@ class Tts:
                         mrf0 = f0[ix]
                         if len(mrf0) == 0:
                             logger.debug(f'{mr.get_vst()}:{mr.get_ed()} No F0 ix')
-                        maxf0 = max(mrf0)
-                        f0_ = np.mean(maxf0[maxf0>0]) if maxf0 > 0 else 0.0
-                        if f0r is not None:
-                            zf0 = f0r[ix]
-                            zf0[zf0>0] = 1
-                            f0_ = -f0_ if np.mean(zf0) < 0.3 else f0_
-                        mr.F0[ii] = f0_
+                            mr.F0[ii] = 0.0
+                        else:
+                            maxf0 = max(mrf0) if len(mrf0)>0 else 0.0
+                            f0_ = np.mean(maxf0[maxf0>0]) if maxf0 > 0.0 else 0.0
+                            if f0r is not None:
+                                zf0 = f0r[ix]
+                                zf0[zf0>0] = 1
+                                f0_ = -f0_ if np.mean(zf0) < 0.3 else f0_
+                            mr.F0[ii] = f0_
 
     def comp_cons(self, ph1, ph2):
         if ph1 == ph2:

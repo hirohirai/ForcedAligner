@@ -15,11 +15,13 @@ seed: 773
 
 
 input:
-  world_path: /home/hirai/work_local/Speech/DBS_/rtmri-atr503/world
-  tgrid_path: /home/hirai/work_local/Speech/DBS_/rtmri-atr503/TextGrid
-  wav_path: /home/hirai/work_local/Speech/DBS_/rtmri-atr503/wav
+  #world_path: /home/hirai/work_local/Speech/DBS_/rt-atr503/world
+  world_path: out2/world
+  tgrid_path: /home/hirai/work_local/Speech/DBS_/rt-atr503/TextGrid
+  wav_path: /home/hirai/work_local/Speech/DBS_/rt-atr503/wav_denoise
   #spk_ptn: (..)/
-  spk_ptn: (...)/
+  #spk_ptn: (...)/
+  spk_ptn: s8
   #subdir: ./
   subdir:
   mgc_order: 45
@@ -30,10 +32,11 @@ input:
 
 
 data:
-  base_dir: data
+  base_dir: data_rt
   stats_dir: stats
   sampling_rate: 16000
-  stats_file: [world.npz, stft.npz, mfcc.npz]
+  #stats_file: [world.npz, stft.npz, mfcc.npz]
+  stats_file: [world.npz]
   mgc_order: 25
   input_dir: in_feats
   #input_dir: in_test
@@ -46,12 +49,12 @@ data:
   dur_dic: dur_dic.pkl
 
   train:
-    id_list: data/dataset_input_s1_C_train.csv
+    id_list: data_rt/dataset_input_s8_train.csv
     #id_list: data/dataset_input_s1_train.csv
     #id_list: data_t/data_test_train.csv
 
   eval:
-    id_list: data/dataset_input_s1_C_eval.csv
+    id_list: data_rt/dataset_input_s8_eval.csv
     #id_list: data/dataset_input_s1_eval.csv
     #id_list: data_t/data_test_eval.csv
 
@@ -63,8 +66,8 @@ cudnn:
   deterministic: false
 
 train:
-  out_dir: exp
-  log_dir: tensorboard/exp
+  out_dir: exp/s8
+  log_dir: tensorboard/exp/s8
 
   max_train_steps: -1
   nepochs: 200
@@ -92,7 +95,7 @@ train:
         gamma: 0.5
 
   pretrained:
-    checkpoint: Exp/aM/best_loss.pth
+    checkpoint: exp/best_loss.pth
 
 
 

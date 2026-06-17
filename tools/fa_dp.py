@@ -215,6 +215,8 @@ def main(args):
 
     cost = np.load(args.costFile)
     cost = np.log(scipy.special.softmax(cost, axis=1))
+    if args.reset_xmax:
+        tts.xmax = len(cost * 0.005)
 
     if args.ed_lbl>0:
         labels = labels[args.st_lbl:args.ed_lbl]
@@ -224,8 +226,19 @@ def main(args):
         for ix, lb in enumerate(labels):
                 print(ix, lb)
 
-    st_time = sted_time[0] - args.st_width if args.st_time<-0.000000001 else args.st_time
-    ed_time = sted_time[1] + args.st_width if args.ed_time<-0.000000001 else args.ed_time
+    if args.st_time >= 0.0:
+        st_time = args.st_time
+    elif args.st_width>0.0:
+        st_time = sted_time[0] - args.st_width
+    else:
+        st_time = sted_time[0]
+
+    if args.ed_time >= 0.0:
+        ed_time = args.ed_time
+    elif args.st_width>0.0:
+        ed_time = sted_time[1] + args.st_width
+    else:
+        ed_time = sted_time[1]
 
     if st_time<0.0:
         st_time = 0.0
@@ -269,6 +282,7 @@ if __name__ == "__main__":
     parser.add_argument('--ed_lbl', type=int, default=-1)
     parser.add_argument('--st_time', type=float, default=-1.0)
     parser.add_argument('--ed_time', type=float, default=-1.0)
+    parser.add_argument('--reset_xmax', action='store_true')
     # parser.add_argument('-s', '--opt_str', default='')
     # parser.add_argument('--opt_int',type=int, default=1)
     # parser.add_argument('-i', '--input',type=argparse.FileType('r'), default='-')

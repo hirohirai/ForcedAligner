@@ -249,13 +249,14 @@ def kana2sampa(ka):
         return kana2ph1[ka]
 
 
-cnvNorm = str.maketrans({"'": "’", ',': '’', '/': '／', '_': '＿', '|': '｜', '!': '！', '?': '？', '０': '0', '１': '1', '２': '2'})
+cnvNorm = str.maketrans({"'": "’", ',': '’', '/': '／', '_': '＿', '|': '｜', '!': '！', '?': '？', '０': '0', '１': '1', '２': '2', '%':'％'})
 
 div_wd_bnd = re.compile(r"(／＿|／＿\d|／＿+|／|＿\d|＿+|｜|　|，)")
 
 class Word:
     def __init__(self):
         self.phs = []
+        self.phs_aux = []
         self.sword = []
         self.sword_kana = []
         self.accup = 1
@@ -278,15 +279,19 @@ class Word:
     def set_jeitaKana(self, ka):
         ka = ka.translate(cnvNorm)
         self.phs = []
+        self.phs_aux = []
         while len(ka)>0:
             if ka[:3] in kana2ph3.keys():
                 self.phs.append(ka[:3])
+                self.phs_aux.append('')
                 ka = ka[3:]
             elif ka[:2] in kana2ph2.keys():
                 self.phs.append(ka[:2])
+                self.phs_aux.append('')
                 ka = ka[2:]
             elif ka[:1] in kana2ph1.keys():
                 self.phs.append(ka[:1])
+                self.phs_aux.append('')
                 ka = ka[1:]
             elif ka[0] == "’":
                 self.accdown = len(self.phs)
@@ -300,9 +305,11 @@ class Word:
                     ka = ka[1:]
             elif ka[0] in 'ー-−―':
                 self.phs.append('ー')
+                self.phs_aux.append('')
                 ka = ka[1:]
             elif ka[0] == 'ッ':
                 self.phs.append(ka[0])
+                self.phs_aux.append('')
                 ka = ka[1:]
             elif ka[0] in '／｜，　':
                 self.set_bound_f(ka[:1])
@@ -320,6 +327,9 @@ class Word:
             elif len(ka) == 2 and ka == '！？':
                 self.set_bound_b(ka)
                 ka = ka[2:]
+            elif ka[0] == '％':
+                self.phs_aux[-1] += ka[0]
+                ka = ka[1:]
             else:
                 ka = ka[1:]
             '''
@@ -372,12 +382,14 @@ class Word:
         if self.accdown > 0:
             for ix in range(st, self.accdown):
                 outs.append(self.phs[ix])
+                outs.append(self.phs_aux[ix])
             outs.append('’')
             if self.acclevel != 1:
                 outs.append(f'{self.acclevel}')
             st = self.accdown
         for ix in range(st, len(self.phs)):
             outs.append(self.phs[ix])
+            outs.append(self.phs_aux[ix])
         outs.append(self.bound_end)
         return outs
 
@@ -385,6 +397,7 @@ class Word:
         outs = []
         for ix in range(0, len(self.phs)):
             outs.append(self.phs[ix])
+            outs.append(self.phs_aux[ix])
         return sep.join(outs)
 
     def get_sampa(self):
@@ -430,6 +443,8 @@ class Word:
                             QQNUM = 0
                         smp = kana2sampa(self.phs[ix])
                         outs += smp
+                    if self.phs_aux[ix] == '％':
+                        outs += '_0'
                 outs.append('^')
                 st = self.accup
 
@@ -452,6 +467,8 @@ class Word:
                             QQNUM = 0
                         smp = kana2sampa(self.phs[ix])
                         outs += smp
+                    if self.phs_aux[ix] == '％':
+                        outs += '_0'
                 if self.acclevel == 0:
                     outs.append('!0')
                 elif self.acclevel == 2:
@@ -477,6 +494,8 @@ class Word:
                         QQNUM = 0
                     smp = kana2sampa(self.phs[ix])
                     outs += smp
+                if self.phs_aux[ix] == '％':
+                    outs += '_0'
 
             if self.accdown == 0 and self.acclevel != 1:
                 outs.append(str(self.acclevel))
@@ -493,8 +512,8 @@ class Word:
 
     def __str__(self):
         outs = f'ACC:{self.accup},{self.accdown},{self.acclevel} BOUND:{self.bound_div},{self.bound_pau},{self.bound_end}\n'
-        for ph in self.phs:
-            outs += f'{ph} '
+        for ph, ph_a in zip(self.phs, self.phs_aux):
+            outs += f'{ph}{ph_a} '
         return outs
 
 
@@ -518,17 +537,26 @@ class KanaSent:
             return
         stposi = len(self.words)
 
+        if ka[0] in '／｜，　' and len(self.words[-1].phs)==0:
+            self.words[-1].set_bound_f(ka[0])
+            ka = ka[1:]
+
         if ka.startswith('sp') or ka.endswith('sp'):
             if len(self.words) > 0:
                 self.words.append(Word())
-                self.words[-1].set_bound_f('｜＿')
+                if ka.find('sp0') >= 0:
+                    self.words[-1].set_bound_f('＿0')
+                elif ka.find('sp2') >= 0:
+                    self.words[-1].set_bound_f('＿2')
+                else:
+                    self.words[-1].set_bound_f('＿')
         else:
             self.add_jeitaKana(ka, end_flg=False)
 
         if stposi == 0:
             if self.words[0].bound_div == '／' and ka[0] != '／':
                 self.words[0].bound_div = ''
-        elif len(self.words[stposi-1].phs)==0 and ka[0] != '／':
+        elif len(self.words[stposi-1].phs)==0 and ka[0] not in  '／｜，　':
             self.words[stposi].bound_div = ''
 
 

@@ -14,14 +14,15 @@ import argparse
 import logging
 import re
 import codecs
+import copy
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from text import kana
 
-
 # ログの設定
 logger = logging.getLogger(__name__)
+
 
 itemnum_ptn = re.compile(r".*\[\s*(\d+)\s*].*")
 MIN_DUR = 0.01
@@ -78,11 +79,11 @@ class Item:
         else:
             obuf += "        xmin = {} \n".format(self.xmin)
         obuf += "        xmax = {} \n".format(self.xmax)
-        if len(self.intervals)>0:
-            obuf += "        intervals: size = {} \n".format(len(self.intervals))
-            for ix, it in enumerate(self.intervals):
-                obuf += "        intervals [{}]:\n".format(ix+1)
-                obuf += str(it)
+#        if len(self.intervals)>0:
+        obuf += "        intervals: size = {} \n".format(len(self.intervals))
+        for ix, it in enumerate(self.intervals):
+            obuf += "        intervals [{}]:\n".format(ix+1)
+            obuf += str(it)
         return obuf
 
     def set(self, bufs, ix):
@@ -205,14 +206,23 @@ class TextGrid:
     def clear_phoneme(self):
         self.item = [itm for itm in self.item if itm.name != '"phoneme"']
 
+    def clear_mora(self):
+        self.item = [itm for itm in self.item if itm.name != '"mora"']
+
     def clear_words(self):
         self.item = [itm for itm in self.item if itm.name != '"kana"']
 
     def clear_swords(self):
         self.item = [itm for itm in self.item if itm.name != '"word"']
 
+    def clear_ayor(self):
+        self.item = [itm for itm in self.item if itm.name != '"AYOR"']
+
     def clear_sents(self):
         self.item = [itm for itm in self.item if itm.name != '"trans"']
+
+    def clear_frame(self):
+        self.item = [itm for itm in self.item if itm.name != '"frame"']
 
     def insert_word(self, ix, kana, st, ed):
         for itm in self.item:
@@ -317,12 +327,12 @@ class TextGrid:
             self.item = self.item[:-1]
         self.item.append(Item('"IntervalTier"', '"frame"'))
         self.xmin = 0.0
-        stn = math.floor((self.xmin + stposi)/ frate + 0.00001) + 1
+        stn = math.floor((self.xmin + stposi)/ frate + 0.001) + 1
         #num = math.floor(stposi / frate)
         if LastFull:
-            edn = math.floor((self.xmax + stposi)/ frate + 0.00001)
+            edn = math.floor((self.xmax + stposi)/ frate + 0.001)
         else:
-            edn = math.ceil((self.xmax + stposi)/ frate - 0.00001)
+            edn = math.ceil((self.xmax + stposi)/ frate - 0.001)
         st = 0.0
         #ed = (num +1) * frate - stposi
         ed = stn * frate - stposi
@@ -333,6 +343,41 @@ class TextGrid:
             self.item[-1].append_interval(lbl, st, ed)
             st = ed
             ed += frate
+
+    def addMora(self, moraTier):
+        if len(self.item)==0 or self.item[0].name != '"phoneme"':
+            return
+        item = self.item
+        self.item = [item[0]]
+        mora_item = Item('"IntervalTier"', '"mora"')
+        mora_item.intervals = moraTier
+        mora_item.xmin = self.item[0].xmin
+        mora_item.xmax = self.item[0].xmax
+        self.item.append(mora_item)
+        self.item.extend(item[1:])
+
+    def addAYOR(self):
+        if len(self.item)==0:
+            return
+        ayor_itm = Item('"IntervalTier"', '"AYOR"')
+        sw_ix = len(self.item)
+        for ix, itm in enumerate(self.item):
+            if itm.name == '"sword"':
+                sw_ix = ix+1
+                break
+            if itm.name == '"trans"':
+                sw_ix = ix
+                break
+
+        ayor_itm.xmin = self.item[sw_ix-1].xmin
+        ayor_itm.xmax = self.item[sw_ix-1].xmax
+        self.item.insert(sw_ix, ayor_itm)
+
+    def correctFrameNum(self, fps=27.1739, LastFull=False):
+        lbl = self.get_frame(0).text
+        fn, num = lbl.split(':')
+        stposi = (int(num)-1) * (1/fps)
+        self.addFrameNum(stposi, fps, fn, LastFull=LastFull)
 
     def copyFrameNum(self, tg):
         if len(self.item) > 0 and self.item[-1].name == '"frame"':
@@ -386,7 +431,7 @@ class TextGrid:
                         self.item[ix].intervals[-1].text = "#"
                         self.item[ix].intervals[-1].xmax = self.xmax
 
-    def correct_times(self, ixs=[0,1,2,3,4]):
+    def correct_times(self, ixs=[0,1,2,3,4,5,6]):
         for ix in ixs:
             if ix < len(self.item):
                 last = 0.0
@@ -394,6 +439,7 @@ class TextGrid:
                     if ii.xmin != last:
                         ii.xmin = last
                     last = ii.xmax
+                self.item[ix].intervals[-1].xmax = self.item[ix].xmax
 
     def correct_word(self):
         for it in self.get_word():
@@ -405,6 +451,24 @@ class TextGrid:
         for itm in self.item:
             itm.xmin = st
             itm.xmax = ed
+
+    def strip_all(self):
+        for itm in self.item:
+            if itm.name != '"AYOR"':
+                st = itm.intervals[0].xmin
+                while len(itm.intervals)>0 and itm.intervals[0].text =='':
+                    itm.intervals.pop(0)
+                if st < itm.intervals[0].xmin:
+                    itm.intervals[0].xmin = st
+
+                ed = itm.intervals[-1].xmax
+                while len(itm.intervals)>0 and itm.intervals[-1].text =='':
+                    itm.intervals.pop(-1)
+                if itm.intervals[-1].xmax < ed:
+                    itm.intervals[-1].xmax = ed
+
+
+
 
     def add_time(self, addTime, ixs=[0,1,2,3,4]):
         self.xmin += addTime
@@ -592,9 +656,27 @@ class TextGrid:
                     return itm.intervals[ii]
         return None
 
+    def get_ayor(self, ii=None):
+        for itm in self.item:
+            if itm.name == '"AYOR"':
+                if ii is None:
+                    return itm.intervals
+                else:
+                    return itm.intervals[ii]
+        return None
+
     def get_phoneme(self, ii=None):
         for itm in self.item:
             if itm.name == '"phoneme"':
+                if ii is None:
+                    return itm.intervals
+                else:
+                    return itm.intervals[ii]
+        return None
+
+    def get_mora(self, ii=None):
+        for itm in self.item:
+            if itm.name == '"mora"':
                 if ii is None:
                     return itm.intervals
                 else:
@@ -608,6 +690,14 @@ class TextGrid:
                     return itm.intervals
                 else:
                     return itm.intervals[ii]
+        return None
+
+    def get_item(self, name):
+        if name[0] != '"':
+            name = f'"{name}"'
+        for itm in self.item:
+            if itm.name == name:
+                return itm
         return None
 
 
@@ -737,6 +827,16 @@ def main14(args):
     tg.addFrameNum(args.st, args.fps)
     print(tg)
 
+def main15(args):
+    tg = TextGrid(args.file1)
+    tg.correctFrameNum()
+    print(tg)
+
+def main16(args):
+    tg = TextGrid(args.file1)
+    tg.strip_all()
+    print(tg)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -778,6 +878,10 @@ if __name__ == "__main__":
         main13(args)
     elif args.mode == "addFrame":
         main14(args)
+    elif args.mode == "correctFrame":
+        main15(args)
+    elif args.mode == "strip":
+        main16(args)
 
     else:
         logger.warning("Mode error")

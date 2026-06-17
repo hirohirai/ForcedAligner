@@ -7,7 +7,8 @@ import sys, os
 import logging
 import argparse
 import subprocess
-import PySimpleGUI as sg
+# import PySimpleGUI as sg
+import FreeSimpleGUI as sg
 
 
 # ログの設定
@@ -25,12 +26,13 @@ logger.addHandler(stream_handler)
 sendpraat_cmd = "sendpraat"
 
 class TextGrid:
-    def __init__(self, wvdir, tgdir, mergin, wvext='.wav', wv_UL_flg=''):
+    def __init__(self, wvdir, tgdir, mergin, wvext='.wav', wv_UL_flg='', tg_UL_flg=''):
         self.wvdir = wvdir
         self.wvext = wvext
         self.tgdir = tgdir
         self.ph_mergin = mergin
         self.wv_UL_flg = wv_UL_flg
+        self.tg_UL_flg = tg_UL_flg
 
     def open_window(self, base):
         logger.debug(str(base))
@@ -40,20 +42,29 @@ class TextGrid:
         else:
             self.bn_wav = self.basename
         self.wvfn = self.wvdir + '/' + self.bn_wav + self.wvext
-        self.tgfn = self.tgdir + '/' + self.basename + '.TextGrid'
+
+        if self.tg_UL_flg in ['U', 'L']:
+            self.bn_tg = self.basename.upper() if self.tg_UL_flg == 'U' else self.basename.lower()
+        else:
+            self.bn_tg = self.basename
+        self.tgfn = self.tgdir + '/' + self.bn_tg + '.TextGrid'
+
         cmd = "{} praat \"Read from file... {}\" \"Read from file... {}\"".format(sendpraat_cmd, self.wvfn, self.tgfn)
         subprocess.run(cmd, shell=True)
-        cmd = "{} praat \"selectObject: \\\"Sound {}\\\", \\\"TextGrid {}\\\"\"".format(sendpraat_cmd, self.bn_wav, self.basename)
+        cmd = "{} praat \"selectObject: \\\"Sound {}\\\", \\\"TextGrid {}\\\"\"".format(sendpraat_cmd, self.bn_wav, self.bn_tg)
         subprocess.run(cmd, shell=True)
         cmd = f"{sendpraat_cmd} praat \"View & Edit\""
         subprocess.run(cmd, shell=True)
-        if len(base) > 2 and base[1]>0:
+        if len(base) > 1 and base[1]>0:
             st = base[1] - self.ph_mergin
             if st<0:
                 st=0.0
-            ed = base[2] + self.ph_mergin
+            if len(base) >2 and base[2] >0:
+                ed = base[2] + self.ph_mergin
+            else:
+                ed = base[1] + self.ph_mergin
             cmd = f'{sendpraat_cmd} praat'
-            cmd += f' "editor: \\\"TextGrid {self.basename}\\\""'
+            cmd += f' "editor: \\\"TextGrid {self.bn_tg}\\\""'
             cmd += f' "Select: {st},{ed}"'
             cmd += f' "Zoom to selection"'
             cmd += f' "endeditor"'
@@ -61,21 +72,21 @@ class TextGrid:
             subprocess.run(cmd, shell=True)
 
     def save_textGrid(self):
-        cmd = "{} praat \"selectObject: \\\"TextGrid {}\\\"\"".format(sendpraat_cmd, self.basename)
+        cmd = "{} praat \"selectObject: \\\"TextGrid {}\\\"\"".format(sendpraat_cmd, self.bn_tg)
         subprocess.run(cmd, shell=True)
         cmd = "{} praat \"Save as text file... {}\"".format(sendpraat_cmd, self.tgfn)
         subprocess.run(cmd, shell=True)
 
     def remove_window(self):
-        cmd = "{} praat \"selectObject: \\\"Sound {}\\\", \\\"TextGrid {}\\\"\"".format(sendpraat_cmd, self.bn_wav, self.basename)
+        cmd = "{} praat \"selectObject: \\\"Sound {}\\\", \\\"TextGrid {}\\\"\"".format(sendpraat_cmd, self.bn_wav, self.bn_tg)
         subprocess.run(cmd, shell=True)
         cmd = f"{sendpraat_cmd} praat \"Remove\""
         subprocess.run(cmd, shell=True)
 
 
 def main_open_one(args):
-    textgrid = TextGrid(args.wvdir, args.tgdir, args.mergin, args.wvext)
-    textgrid.open_window(args.kanalist)
+    textgrid = TextGrid(args.wvdir, args.tgdir, args.mergin, args.wvext, args.wvUL, args.tgUL)
+    textgrid.open_window([args.kanalist])
     
 
 
@@ -131,9 +142,20 @@ class TgFiles:
                 else:
                     tmpfn[ee[0]] = 0
                     lbl = ee[0]
+                if len(ee)>2:
+                    if not ee[2][0].isnumeric():
+                        lbl = f'{lbl}%{ee[2][0]}'
                 self.lbls.append(lbl)
-                if len(ee) == 3:
-                    self.body[lbl] = [ee[0], float(ee[1]), float(ee[2])]
+                if len(ee) == 2 and ee[1][0].isnumeric():
+                    self.body[lbl] = [ee[0], float(ee[1]), -1.0]
+                elif len(ee) == 3:
+                    if ee[1][0].isnumeric():
+                        if ee[2][0].isnumeric():
+                            self.body[lbl] = [ee[0], float(ee[1]), float(ee[2])]
+                        else:
+                            self.body[lbl] = [ee[0], float(ee[1]), -1]
+                    else:
+                        self.body[lbl] = [ee[0], -1.0, -1.0]
                 else:
                     self.body[lbl] = [ee[0], -1.0, -1.0]
 
@@ -199,7 +221,7 @@ def main_gui(args):
     tg_list = TgFiles(kanalist)
     f_list = tg_list.lbls
 
-    textgrid = TextGrid(wvdir, tgdir, args.mergin, args.wvext, args.wvUL)
+    textgrid = TextGrid(wvdir, tgdir, args.mergin, args.wvext, args.wvUL, args.tgUL)
     col1 = [[sg.Button(' up ')], [sg.Button('Save')], [sg.Button('Next')], [sg.Button('down')], [sg.Button('Read')]]
     layout = [[sg.Listbox(values=f_list, select_mode=sg.LISTBOX_SELECT_MODE_SINGLE, size=(10,30), key='-FileList-', enable_events=True), sg.Column(col1)]]
     window = sg.Window('TextGrid Edit', layout)
@@ -262,6 +284,7 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--start", default='0')
     parser.add_argument("-m", "--mergin", type=float, default=0.1)
     parser.add_argument("--wvUL", default='')
+    parser.add_argument("--tgUL", default='')
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--nogui", action="store_true")
     parser.add_argument("--wvdir", default='/home/hirai/work_local/Speech/DBS_/rtmri-atr503/wav/s1')

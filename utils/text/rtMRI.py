@@ -61,4 +61,6 @@ CSJ_BDG = ('g', 'd', 'b',
 CL_ph = ['k', 'g', 't', 'c', 'd', 'b', 'p', 'kj', 'gj', 'cj', 't_', 'c_', 'tj', 'dj', 'bj', 'pj', 'z', 'z_', 'zj']
 J_ph = ['kj', 'sj', 'cj', 'tj', 'hj', 'fj', 'pj', 'gj', 'zj', 'dj', 'nj', 'bj', 'mj', 'rj']
 
+MORA_VOW = ['a', 'i', 'u', 'e', 'o', 'A', 'I', 'U', 'E', 'O', 'N', 'Q', 'H']
+
 # len(roms) 42

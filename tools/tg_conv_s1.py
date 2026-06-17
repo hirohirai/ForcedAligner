@@ -99,7 +99,9 @@ def main(args):
                 print(f"Ed {spl.fn}")
             tg.add_time(diff_time)
             tg.set_xmax_xmin(spl.wlen)
-            tg.addFrameNum(spl.st, fn=f'{date_ab}{ss_num}')
+            tg.addFrameNum(spl.st, fn=f'{date_ab}{ss_num}', LastFull=False)
+            tg.correct_times()
+
             ofn = f'{args.odir}/{spl.fn}.TextGrid'
             with open(ofn, 'w') as ofs:
                 print(tg, file=ofs)
