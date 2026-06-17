@@ -1,0 +1,11 @@
+
+netG:
+  _target_: model.seg.PhonemeProbC
+  #h_dims: [8, 8]
+  #mfcc_dim: 2
+  #mfcc_slice: 1
+  #out_dim: 3
+  h_dims: [1024,1024,1024]
+  mfcc_dim: 28
+  mfcc_slice: 15
+  out_dim: 41

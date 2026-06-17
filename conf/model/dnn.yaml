@@ -1,0 +1,13 @@
+
+netG:
+  _target_: model.seg.PhonemeProbSC
+  stft_cnn_dims: [32,48,]
+  ksize: [5,5,]
+  pksize: [3,3,]
+  plst: [2,2,]
+  mgc_slice: 15
+  mgc_order: 28
+  mgc_dims: [1024,]
+  fc_indim: 1344
+  fc_dims: [1024,]
+  out_dim: 41
